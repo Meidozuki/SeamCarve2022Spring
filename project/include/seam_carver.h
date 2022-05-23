@@ -113,33 +113,32 @@ class SeamCarver {
                 }
             }
 
-            cv::Point p(rows-1, temp_index);
-            seam[p.x] = p.y;
-            for(int i = p.x; i > 0; --i) {
-                auto energy = map_data[i][p.y] - (int)energy_map.at<uchar>(i, p.y);
+            seam[rows-1] = temp_index;
+            for(int i = rows - 1; i > 0; --i) {
+                auto energy = map_data[i][temp_index] - (int)energy_map.at<uchar>(i, temp_index);
                 // 边界检测
-                if(p.y == 0) {
-                    if(energy == map_data[i-1][p.y+1])
-                        p = cv::Point(i-1, p.y+1);
+                if(temp_index == 0) {
+                    if(energy == map_data[i-1][temp_index + 1])
+                        temp_index = temp_index+1;
                     else
-                        p = cv::Point(i-1, p.y);
+                        temp_index = temp_index;
                 }
-                else if (p.y == cols - 1) {
-                    if (energy == map_data[i - 1][p.y - 1])
-                        p = cv::Point(i - 1, p.y - 1);
+                else if (temp_index == cols - 1) {
+                    if (energy == map_data[i - 1][temp_index - 1])
+                        temp_index = temp_index - 1;
                     else
-                        p = cv::Point(i - 1, p.y);
+                        temp_index = temp_index;
                 }
                 // 非边界情况
                 else {
-                    if (energy == map_data[i - 1][p.y - 1])
-                        p = cv::Point(i - 1, p.y - 1);
-                    else if (energy == map_data[i - 1][p.y + 1])
-                        p = cv::Point(i - 1, p.y + 1);
+                    if (energy == map_data[i - 1][temp_index - 1])
+                        temp_index = temp_index - 1;
+                    else if (energy == map_data[i - 1][temp_index + 1])
+                        temp_index = temp_index + 1;
                     else
-                        p = cv::Point(i - 1, p.y);
+                        temp_index = temp_index;
                 }
-                seam[i] = p.y;
+                seam[i - 1] = temp_index;
             }
         }
 
