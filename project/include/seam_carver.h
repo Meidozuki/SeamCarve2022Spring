@@ -56,6 +56,30 @@ class SeamCarver {
                 output_img = RotateBack(output_img);
             }
 
+            else if(MOD == 2) {
+                cv::Mat temp_img = output_img.clone();
+                for(int i = 0; i < size; ++i) {
+                    CalculateEnergyMap(output_img);
+                    FindSeam(energy_map);
+                    seam_buffer.push_back(seam);
+                    RemoveSeam(seam);
+                }
+                output_img  = temp_img.clone();
+                for(int i = 0; i < size; ++i) {
+                    // 实时显示找到的seam
+                    cv::Mat carved_image = output_img.clone();
+                    for(int j = 0; j < output_img.rows; ++j) {
+                        for(int k = 0; k < 3; ++k) {
+                            carved_image.at<cv::Vec3b>(j, seam_buffer[i][j])[k] = 233;
+                        }
+                    }
+                    cv::imshow("Processing", carved_image);
+                    cv::waitKey(1);
+                    AddSeam(seam_buffer[i]);
+                }
+                seam_buffer.clear();
+            }
+
             // 结果
             cv::imshow("output", output_img);
             cv::waitKey(0);
@@ -77,6 +101,11 @@ class SeamCarver {
             cv::addWeighted(sobelX, 1, sobelY, 1, 0, energy_map);
         }
 
+        // 更新能量图
+        void UpdateEnergyMap() {
+            
+        }
+
         // 找到能量最少的一条Seam
         void FindSeam(const cv::Mat energy_map) {
             const int rows = energy_map.rows;
@@ -95,12 +124,12 @@ class SeamCarver {
                 for(int j = 0; j < cols; ++j) {
                     // 边界检测
                     if(j == 0)
-                        map_data[i][j] = std::min(map_data[i-1][j+1], map_data[i-1][j]);
+                        map_data[i][j] = std::min(map_data[i - 1][j + 1], map_data[i - 1][j]);
                     else if(j == cols-1)
-                        map_data[i][j] = std::min(map_data[i-1][j-1], map_data[i-1][j]);
+                        map_data[i][j] = std::min(map_data[i - 1][j - 1], map_data[i - 1][j]);
                     // 非边界情况
                     else
-                        map_data[i][j] = std::min(map_data[i-1][j-1], std::min(map_data[i-1][j], map_data[i-1][j+1]));
+                        map_data[i][j] = std::min(map_data[i - 1][j - 1], std::min(map_data[i - 1][j], map_data[i - 1][j + 1]));
                     map_data[i][j] += energy_map.at<uchar>(i, j);
                 }
             }
@@ -118,8 +147,8 @@ class SeamCarver {
                 auto energy = map_data[i][temp_index] - (int)energy_map.at<uchar>(i, temp_index);
                 // 边界检测
                 if(temp_index == 0) {
-                    if(energy == map_data[i-1][temp_index + 1])
-                        temp_index = temp_index+1;
+                    if(energy == map_data[i - 1][temp_index + 1])
+                        temp_index = temp_index + 1;
                     else
                         temp_index = temp_index;
                 }
@@ -178,6 +207,29 @@ class SeamCarver {
             output_img = new_img.clone();
         }
 
+        // 插入Seam
+        void AddSeam(std::vector<int> seam) {
+            cv::Mat new_img;
+            new_img.create(output_img.rows, output_img.cols + 1, output_img.type());
+            const int rows = output_img.rows;
+            const int cols = output_img.cols;
+            for(int i = 0; i < rows; ++i) {
+                int temp = seam[i];
+                // 对于要移除的seam，左边的像素保持不动
+                for(int j = 0; j < temp; ++j) {
+                    new_img.at<cv::Vec3b>(i, j) = output_img.at<cv::Vec3b>(i, j);
+                }
+                // 右边的像素向右移一格
+                for(int j = temp + 1; j < cols + 1; ++j) {
+                    new_img.at<cv::Vec3b>(i, j) = output_img.at<cv::Vec3b>(i, j - 1);
+                }
+                // 对出来的一行做平均值处理
+                new_img.at<cv::Vec3b>(i, temp) = new_img.at<cv::Vec3b>(i, temp - 1);
+                //new_img.at<cv::Vec3b>(i, temp) = (new_img.at<cv::Vec3b>(i, temp - 1) + new_img.at<cv::Vec3b>(i, temp + 1)) / 2.0f;  
+            }
+            output_img = new_img.clone();
+        }
+
         // 绘制界面
         void Draw() {
             std::vector<cv::Mat> images;
@@ -192,4 +244,5 @@ class SeamCarver {
         cv::Mat output_img;
 
         std::vector<int> seam;
+        std::vector<std::vector<int>> seam_buffer;
 };
