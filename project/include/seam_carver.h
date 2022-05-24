@@ -12,22 +12,48 @@ class SeamCarver {
         ~SeamCarver() {}
 
         // 实时更新图像
-        void UpdateImg() {
-            for(int i = 0; i < 100; ++i) {
-                CalculateEnergyMap(output_img);
-                FindSeam(energy_map);
-                RemoveSeam(seam);
+        void UpdateImg(int MOD, int size) {
+            if(MOD == 0) {
+                for(int i = 0; i < size; ++i) {
+                    // Vertical
+                    CalculateEnergyMap(output_img);
+                    FindSeam(energy_map);
+                               
+                    // 实时显示找到的seam
+                    cv::Mat carved_image = output_img.clone();
+                    for(int j = 0; j < output_img.rows; ++j) {
+                        for(int k = 0; k < 3; ++k) {
+                            carved_image.at<cv::Vec3b>(j, seam[j])[k] = 233;
+                        }
+                    }
+                    cv::imshow("Processing", carved_image);
+                    cv::waitKey(1);
 
-                // 实时显示找到的seam
-                cv::Mat test_image = output_img.clone();
-                for(int j = 0; j < output_img.rows; ++j)
-                {
-                    test_image.at<cv::Vec3b>(j, seam[j])[0] = 0;
-                    test_image.at<cv::Vec3b>(j, seam[j])[1] = 0;
-                    test_image.at<cv::Vec3b>(j, seam[j])[2] = 233;
+                    RemoveSeam(seam);
                 }
-                cv::imshow("test", test_image);
-                cv::waitKey(1);
+            }
+
+            else if(MOD == 1) {
+                output_img = RotateImage(output_img);
+                for(int i = 0; i < size; ++i) {
+                    // Horizontal
+                    CalculateEnergyMap(output_img);
+                    FindSeam(energy_map);
+
+                    // 实时显示找到的seam
+                    cv::Mat carved_image = output_img.clone();
+                    for(int j = 0; j < output_img.rows; ++j) {
+                        for(int k = 0; k < 3; ++k) {
+                            carved_image.at<cv::Vec3b>(j, seam[j])[k] = 233;
+                        }
+                    }
+                    carved_image = RotateBack(carved_image);
+                    cv::imshow("Processing", carved_image);
+                    cv::waitKey(1);
+
+                    RemoveSeam(seam);
+                }   
+                output_img = RotateBack(output_img);
             }
 
             // 结果
@@ -51,7 +77,7 @@ class SeamCarver {
             cv::addWeighted(sobelX, 1, sobelY, 1, 0, energy_map);
         }
 
-        // 找到能量最少的一条seam
+        // 找到能量最少的一条Seam
         void FindSeam(const cv::Mat energy_map) {
             const int rows = energy_map.rows;
             const int cols = energy_map.cols;
@@ -87,34 +113,49 @@ class SeamCarver {
                 }
             }
 
-            cv::Point p(rows-1, temp_index);
-            seam[p.x] = p.y;
-            for(int i = p.x; i > 0; --i) {
-                auto energy = map_data[i][p.y] - (int)energy_map.at<uchar>(i, p.y);
+            seam[rows-1] = temp_index;
+            for(int i = rows - 1; i > 0; --i) {
+                auto energy = map_data[i][temp_index] - (int)energy_map.at<uchar>(i, temp_index);
                 // 边界检测
-                if(p.y == 0) {
-                    if(energy == map_data[i-1][p.y+1])
-                        p = cv::Point(i-1, p.y+1);
+                if(temp_index == 0) {
+                    if(energy == map_data[i-1][temp_index + 1])
+                        temp_index = temp_index+1;
                     else
-                        p = cv::Point(i-1, p.y);
+                        temp_index = temp_index;
                 }
-                else if (p.y == cols - 1) {
-                    if (energy == map_data[i - 1][p.y - 1])
-                        p = cv::Point(i - 1, p.y - 1);
+                else if (temp_index == cols - 1) {
+                    if (energy == map_data[i - 1][temp_index - 1])
+                        temp_index = temp_index - 1;
                     else
-                        p = cv::Point(i - 1, p.y);
+                        temp_index = temp_index;
                 }
                 // 非边界情况
                 else {
-                    if (energy == map_data[i - 1][p.y - 1])
-                        p = cv::Point(i - 1, p.y - 1);
-                    else if (energy == map_data[i - 1][p.y + 1])
-                        p = cv::Point(i - 1, p.y + 1);
+                    if (energy == map_data[i - 1][temp_index - 1])
+                        temp_index = temp_index - 1;
+                    else if (energy == map_data[i - 1][temp_index + 1])
+                        temp_index = temp_index + 1;
                     else
-                        p = cv::Point(i - 1, p.y);
+                        temp_index = temp_index;
                 }
-                seam[i] = p.y;
+                seam[i - 1] = temp_index;
             }
+        }
+
+        // 转90度
+        cv::Mat RotateImage(const cv::Mat img) {
+            cv::Mat rotated_img;
+            cv::transpose(img, rotated_img);
+            cv::flip(rotated_img, rotated_img, 1);
+            return rotated_img;
+        }
+
+        // 转回来
+        cv::Mat RotateBack(const cv::Mat rotated_img) {
+            cv::Mat img;
+            cv::transpose(rotated_img, img);
+            cv::flip(img, img, 0);
+            return img;
         }
 
         // 删除Seam

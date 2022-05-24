@@ -5,12 +5,14 @@
 #include <memory>
 #include "seam_carver.h"
 
+#define MOD 1
+
 int main(void) {
     // 记得使用绝对路径
-    std::string filename = "C:/Users/Hiyori/Documents/GitHub/SeamCarve2022Spring/project/test_image/test1.jpg";
+    std::string filename = "C:/Users/Hiyori/Documents/GitHub/SeamCarve2022Spring/project/test_image/HJoceanSmall.png";
 
     SeamCarver sc(filename.c_str());
-    sc.UpdateImg();
+    sc.UpdateImg(MOD, 100);
     
     return 0;
 }
