@@ -1,5 +1,6 @@
 #pragma once
 
+#include "cal_energy.h"
 #include "user_interface.h"
 
 class SeamCarver {
@@ -94,6 +95,8 @@ class SeamCarver {
             cv::Mat sobelX, sobelY;
             cv::Sobel(gray_img, sobelX, CV_16S, 1, 0);
             cv::Sobel(gray_img, sobelY, CV_16S, 0, 1);
+//            cal_gradient(gray_img, sobelX,  1, 0);
+//            cal_gradient(gray_img, sobelY,  0, 1);
 
             cv::convertScaleAbs(sobelX, sobelX);
             cv::convertScaleAbs(sobelY, sobelY);
