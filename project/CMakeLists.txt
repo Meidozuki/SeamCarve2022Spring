@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.17)
 set(CMAKE_CXX_STANDARD 11)
 project(SeamCarver VERSION 0.0.0)
 
-message(${PROJECT_NAME})
+message(${PROJECT_SOURCE_DIR})
 
 configure_file(header_config.h.in header_config.h)
 
