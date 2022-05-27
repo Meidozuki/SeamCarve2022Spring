@@ -93,10 +93,10 @@ class SeamCarver {
             cv::cvtColor(img, gray_img, cv::COLOR_BGR2GRAY);
             // Sobel
             cv::Mat sobelX, sobelY;
-            cv::Sobel(gray_img, sobelX, CV_16S, 1, 0);
-            cv::Sobel(gray_img, sobelY, CV_16S, 0, 1);
-//            cal_gradient(gray_img, sobelX,  1, 0);
-//            cal_gradient(gray_img, sobelY,  0, 1);
+//            cv::Sobel(gray_img, sobelX, CV_16S, 1, 0);
+//            cv::Sobel(gray_img, sobelY, CV_16S, 0, 1);
+            cal_gradient(gray_img, sobelX,  1, 0);
+            cal_gradient(gray_img, sobelY,  0, 1);
 
             cv::convertScaleAbs(sobelX, sobelX);
             cv::convertScaleAbs(sobelY, sobelY);
