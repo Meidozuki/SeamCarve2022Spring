@@ -7,16 +7,17 @@
 
 #include "header_config.h"
 
-#define MOD 2
+#define MOD 3
+#define SEAM 100
 
 int main(void) {
-    // 记得使用绝对路径
+
     std::string src_dir(SRC_DIR);
-    std::string filename = "/test_image/HJoceanSmall.png";
+    std::string filename = "/test_image/test3.jpg";
     filename=src_dir + filename;
 
     SeamCarver sc(filename.c_str());
-    sc.UpdateImg(MOD, 200);
+    sc.UpdateImg(MOD, SEAM);
     
     return 0;
 }
