@@ -4,6 +4,14 @@
 #include "user_interface.h"
 
 class SeamCarver {
+    private:
+        cv::Mat input_img;
+        cv::Mat energy_map;
+        cv::Mat output_img;
+
+        std::vector<int> seam;
+        std::vector<std::vector<int>> seam_buffer;
+
     public:
         SeamCarver() {}
         SeamCarver(const char* filename) {
@@ -15,70 +23,20 @@ class SeamCarver {
         // 实时更新图像
         void UpdateImg(int MOD, int size) {
             if(MOD == 0) {
-                for(int i = 0; i < size; ++i) {
-                    // Vertical
-                    CalculateEnergyMap(output_img);
-                    FindSeam(energy_map);
-                               
-                    // 实时显示找到的seam
-                    cv::Mat carved_image = output_img.clone();
-                    for(int j = 0; j < output_img.rows; ++j) {
-                        for(int k = 0; k < 3; ++k) {
-                            carved_image.at<cv::Vec3b>(j, seam[j])[k] = 233;
-                        }
-                    }
-                    cv::imshow("Processing", carved_image);
-                    cv::waitKey(1);
-
-                    RemoveSeam(seam);
-                }
+                VerticalChangeAspectRatio(size);
             }
 
             else if(MOD == 1) {
-                output_img = RotateImage(output_img);
-                for(int i = 0; i < size; ++i) {
-                    // Horizontal
-                    CalculateEnergyMap(output_img);
-                    FindSeam(energy_map);
-
-                    // 实时显示找到的seam
-                    cv::Mat carved_image = output_img.clone();
-                    for(int j = 0; j < output_img.rows; ++j) {
-                        for(int k = 0; k < 3; ++k) {
-                            carved_image.at<cv::Vec3b>(j, seam[j])[k] = 233;
-                        }
-                    }
-                    carved_image = RotateBack(carved_image);
-                    cv::imshow("Processing", carved_image);
-                    cv::waitKey(1);
-
-                    RemoveSeam(seam);
-                }   
-                output_img = RotateBack(output_img);
+                HorizontalChangeAspectRatio(size);
             }
 
             else if(MOD == 2) {
-                cv::Mat temp_img = output_img.clone();
-                for(int i = 0; i < size; ++i) {
-                    CalculateEnergyMap(output_img);
-                    FindSeam(energy_map);
-                    seam_buffer.push_back(seam);
-                    RemoveSeam(seam);
-                }
-                output_img  = temp_img.clone();
-                for(int i = 0; i < size; ++i) {
-                    // 实时显示找到的seam
-                    cv::Mat carved_image = output_img.clone();
-                    for(int j = 0; j < output_img.rows; ++j) {
-                        for(int k = 0; k < 3; ++k) {
-                            carved_image.at<cv::Vec3b>(j, seam_buffer[i][j])[k] = 233;
-                        }
-                    }
-                    cv::imshow("Processing", carved_image);
-                    cv::waitKey(1);
-                    AddSeam(seam_buffer[i]);
-                }
-                seam_buffer.clear();
+                VerticalImageEnlarging(size);
+            }
+
+            else if(MOD == 3) {
+                //HorizontalImageEnlarging(size);
+                ContentEnhancement(size);
             }
 
             // 结果
@@ -102,11 +60,6 @@ class SeamCarver {
             cv::convertScaleAbs(sobelY, sobelY);
 
             cv::addWeighted(sobelX, 1, sobelY, 1, 0, energy_map);
-        }
-
-        // 更新能量图
-        void UpdateEnergyMap() {
-            
         }
 
         // 找到能量最少的一条Seam
@@ -227,8 +180,8 @@ class SeamCarver {
                     new_img.at<cv::Vec3b>(i, j) = output_img.at<cv::Vec3b>(i, j - 1);
                 }
                 // 对出来的一行做平均值处理
-                new_img.at<cv::Vec3b>(i, temp) = new_img.at<cv::Vec3b>(i, temp - 1);
-                //new_img.at<cv::Vec3b>(i, temp) = (new_img.at<cv::Vec3b>(i, temp - 1) + new_img.at<cv::Vec3b>(i, temp + 1)) / 2.0f;  
+                new_img.at<cv::Vec3b>(i, temp) = 
+                    new_img.at<cv::Vec3b>(i, temp - 1) * 0.5f + new_img.at<cv::Vec3b>(i, temp + 1) * 0.5f;  
             }
             output_img = new_img.clone();
         }
@@ -241,11 +194,111 @@ class SeamCarver {
             //show_image(images);
         }
 
-    private:
-        cv::Mat input_img;
-        cv::Mat energy_map;
-        cv::Mat output_img;
+        // Change Aspect Ratio
+        void VerticalChangeAspectRatio(int size)
+        {
+            for(int i = 0; i < size; ++i) {
+                // Vertical
+                CalculateEnergyMap(output_img);
+                FindSeam(energy_map);
+                            
+                // 实时显示找到的seam
+                cv::Mat carved_image = output_img.clone();
+                for(int j = 0; j < output_img.rows; ++j) {
+                    for(int k = 0; k < 3; ++k) {
+                        carved_image.at<cv::Vec3b>(j, seam[j])[k] = 233;
+                    }
+                }
+                cv::imshow("Processing", carved_image);
+                cv::waitKey(1);
 
-        std::vector<int> seam;
-        std::vector<std::vector<int>> seam_buffer;
+                RemoveSeam(seam);
+            }
+        }
+
+        void HorizontalChangeAspectRatio(int size)
+        {
+            output_img = RotateImage(output_img);
+            for(int i = 0; i < size; ++i) {
+                // Horizontal
+                CalculateEnergyMap(output_img);
+                FindSeam(energy_map);
+
+                // 实时显示找到的seam
+                cv::Mat carved_image = output_img.clone();
+                for(int j = 0; j < output_img.rows; ++j) {
+                    for(int k = 0; k < 3; ++k) {
+                        carved_image.at<cv::Vec3b>(j, seam[j])[k] = 233;
+                    }
+                }
+                carved_image = RotateBack(carved_image);
+                cv::imshow("Processing", carved_image);
+                cv::waitKey(1);
+
+                RemoveSeam(seam);
+            }   
+            output_img = RotateBack(output_img);
+        }
+
+        // Image Enlarging
+        void VerticalImageEnlarging(int size)
+        {
+            cv::Mat temp_img = output_img.clone();
+            for(int i = 0; i < size; ++i) {
+                CalculateEnergyMap(output_img);
+                FindSeam(energy_map);
+                seam_buffer.push_back(seam);
+                RemoveSeam(seam);
+            }
+            output_img  = temp_img.clone();
+            for(int i = 0; i < size; ++i) {
+                // 实时显示找到的seam
+                cv::Mat carved_image = output_img.clone();
+                for(int j = 0; j < output_img.rows; ++j) {
+                    for(int k = 0; k < 3; ++k) {
+                        carved_image.at<cv::Vec3b>(j, seam_buffer[i][j])[k] = 233;
+                    }
+                }
+                cv::imshow("Processing", carved_image);
+                cv::waitKey(1);
+                AddSeam(seam_buffer[i]);
+            }
+            seam_buffer.clear();
+        }
+
+        void HorizontalImageEnlarging(int size)
+        {
+            output_img = RotateImage(output_img);
+            cv::Mat temp_img = output_img.clone();
+            for(int i = 0; i < size; ++i) {
+                CalculateEnergyMap(output_img);
+                FindSeam(energy_map);
+                seam_buffer.push_back(seam);
+                RemoveSeam(seam);
+            }
+            output_img  = temp_img.clone();
+            for(int i = 0; i < size; ++i) {
+                // 实时显示找到的seam
+                cv::Mat carved_image = output_img.clone();
+                for(int j = 0; j < output_img.rows; ++j) {
+                    for(int k = 0; k < 3; ++k) {
+                        carved_image.at<cv::Vec3b>(j, seam_buffer[i][j])[k] = 233;
+                    }
+                }
+                carved_image = RotateBack(carved_image);
+                cv::imshow("Processing", carved_image);
+                cv::waitKey(1);
+                AddSeam(seam_buffer[i]);
+            }
+            output_img = RotateBack(output_img);
+            seam_buffer.clear();
+        }
+
+        // Content Enhancement
+        void ContentEnhancement(int size)
+        {
+            VerticalImageEnlarging(size);
+            VerticalChangeAspectRatio(size);
+        }
+
 };
