@@ -66,9 +66,14 @@ class SeamCarver {
         void FindSeam(const cv::Mat energy_map) {
             const int rows = energy_map.rows;
             const int cols = energy_map.cols;
-            int map_data[rows][cols];
+//            int map_data[rows][cols];
+            std::vector<std::vector<int>> map_data;
+            map_data.resize(rows);
+            for (int i = 0;i < rows;++i) {
+                map_data[i].resize(cols);
+            }
 
-            int temp = 1919810;
+            int temp = 999999;
             int temp_index = -1;
             seam.resize(rows, 0);
 
