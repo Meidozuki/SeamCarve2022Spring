@@ -7,17 +7,16 @@
 
 #include "header_config.h"
 
-#define MOD 3
-#define SEAM 100
+#define SEAM 200
 
 int main(void) {
 
     std::string src_dir(SRC_DIR);
-    std::string filename = "/test_image/test3.jpg";
-    filename=src_dir + filename;
+    std::string filename = "/test_image/HJoceanSmall.png";
+    filename = src_dir + filename;
 
     SeamCarver sc(filename.c_str());
-    sc.UpdateImg(MOD, SEAM);
+    sc.UpdateImg(Mod::HORIZONTAL_ENLARGE, SEAM);
     
     return 0;
 }

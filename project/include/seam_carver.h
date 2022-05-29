@@ -3,6 +3,14 @@
 #include "cal_energy.h"
 #include "user_interface.h"
 
+enum Mod {
+    VERTICAL_CARVE,
+    HORIZONTAL_CARVE,
+    VERTICAL_ENLARGE,
+    HORIZONTAL_ENLARGE,
+    CONTENT_ENHANCEMENT
+};
+
 class SeamCarver {
     private:
         cv::Mat input_img;
@@ -22,21 +30,31 @@ class SeamCarver {
 
         // 实时更新图像
         void UpdateImg(int MOD, int size) {
-            if(MOD == 0) {
-                VerticalChangeAspectRatio(size);
-            }
+            switch (MOD)
+            {
+                case Mod::VERTICAL_CARVE:
+                    VerticalChangeAspectRatio(size);
+                    break;
 
-            else if(MOD == 1) {
-                HorizontalChangeAspectRatio(size);
-            }
+                case Mod::HORIZONTAL_CARVE:
+                    HorizontalChangeAspectRatio(size);
+                    break;
 
-            else if(MOD == 2) {
-                VerticalImageEnlarging(size);
-            }
+                case Mod::VERTICAL_ENLARGE:
+                    VerticalImageEnlarging(size);
+                    break;
 
-            else if(MOD == 3) {
-                //HorizontalImageEnlarging(size);
-                ContentEnhancement(size);
+                case Mod::HORIZONTAL_ENLARGE:
+                    HorizontalImageEnlarging(size);
+                    break;
+                
+                case Mod::CONTENT_ENHANCEMENT:
+                    ContentEnhancement(size);
+                    break;
+
+                default:
+                    std::cout << "Error: Mod not found!" << std::endl;
+                    break;
             }
 
             // 结果
@@ -51,8 +69,8 @@ class SeamCarver {
             cv::cvtColor(img, gray_img, cv::COLOR_BGR2GRAY);
             // Sobel
             cv::Mat sobelX, sobelY;
-//            cv::Sobel(gray_img, sobelX, CV_16S, 1, 0);
-//            cv::Sobel(gray_img, sobelY, CV_16S, 0, 1);
+            // cv::Sobel(gray_img, sobelX, CV_16S, 1, 0);
+            // cv::Sobel(gray_img, sobelY, CV_16S, 0, 1);
             cal_gradient(gray_img, sobelX,  1, 0);
             cal_gradient(gray_img, sobelY,  0, 1);
 
@@ -66,7 +84,7 @@ class SeamCarver {
         void FindSeam(const cv::Mat energy_map) {
             const int rows = energy_map.rows;
             const int cols = energy_map.cols;
-//            int map_data[rows][cols];
+            // int map_data[rows][cols];
             std::vector<std::vector<int>> map_data;
             map_data.resize(rows);
             for (int i = 0;i < rows;++i) {
@@ -184,9 +202,16 @@ class SeamCarver {
                 for(int j = temp + 1; j < cols + 1; ++j) {
                     new_img.at<cv::Vec3b>(i, j) = output_img.at<cv::Vec3b>(i, j - 1);
                 }
-                // 对出来的一行做平均值处理
-                new_img.at<cv::Vec3b>(i, temp) = 
-                    new_img.at<cv::Vec3b>(i, temp - 1) * 0.5f + new_img.at<cv::Vec3b>(i, temp + 1) * 0.5f;  
+                // 插入Seam
+                // 边界检测
+                if(temp == 0)
+                    new_img.at<cv::Vec3b>(i, seam[i]) = new_img.at<cv::Vec3b>(i, temp + 1);
+                else if(temp == cols)
+                    new_img.at<cv::Vec3b>(i, seam[i]) = new_img.at<cv::Vec3b>(i, temp - 1);
+                // 非边界，对出来的一行做平均值处理
+                else 
+                    new_img.at<cv::Vec3b>(i, temp) = 
+                        new_img.at<cv::Vec3b>(i, temp - 1) * 0.5f + new_img.at<cv::Vec3b>(i, temp + 1) * 0.5f;
             }
             output_img = new_img.clone();
         }
@@ -302,8 +327,12 @@ class SeamCarver {
         // Content Enhancement
         void ContentEnhancement(int size)
         {
-            VerticalImageEnlarging(size);
+            const int cols = output_img.cols + size;
+            const int rows = output_img.rows + size;
+            resize(output_img, output_img, cv::Size(cols, rows));
+
             VerticalChangeAspectRatio(size);
+            HorizontalChangeAspectRatio(size);
         }
 
 };
