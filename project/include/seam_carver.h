@@ -9,7 +9,8 @@ enum Mod {
     VERTICAL_ENLARGE,
     HORIZONTAL_ENLARGE,
     CONTENT_ENHANCEMENT,
-    MULTI_SIZE_IMAGE
+    MULTI_SIZE_IMAGE,
+    OPTIMAL_ORDER
 };
 
 class SeamCarver {
@@ -55,6 +56,10 @@ class SeamCarver {
 
                 case Mod::MULTI_SIZE_IMAGE:
                     MultiSizeImages();
+                    break;
+
+                case Mod::OPTIMAL_ORDER:
+                    OptimalOrder(size);
                     break;
 
                 default:
@@ -398,7 +403,7 @@ class SeamCarver {
                     }
                 }
                 else {                    
-                    for(int i = 0; i < size; ++i) {
+                    for(int i = 0; i < cols - size; ++i) {
                         RemoveSeam(seam_buffer[i]);
                     }
                 }
@@ -406,6 +411,73 @@ class SeamCarver {
                 cv::waitKey(0);
             }
             seam_buffer.clear();
+        }
+
+        // Optimal Order
+        int FindEnergy(const cv::Mat energy_map) {
+            const int rows = energy_map.rows;
+            const int cols = energy_map.cols;
+            std::vector<std::vector<int>> map_data;
+            map_data.resize(rows);
+            for (int i = 0;i < rows;++i) {
+                map_data[i].resize(cols);
+            }
+
+            int temp = 999999;
+            int temp_index = -1;
+
+            for(int i = 0; i < cols; ++i) {
+                map_data[0][i] = (int)energy_map.at<uchar>(0, i);
+            }
+
+            for(int i = 1; i < rows; ++i) {
+                for(int j = 0; j < cols; ++j) {
+                    // 边界检测
+                    if(j == 0)
+                        map_data[i][j] = std::min(map_data[i - 1][j + 1], map_data[i - 1][j]);
+                    else if(j == cols-1)
+                        map_data[i][j] = std::min(map_data[i - 1][j - 1], map_data[i - 1][j]);
+                    // 非边界情况
+                    else
+                        map_data[i][j] = std::min(map_data[i - 1][j - 1], std::min(map_data[i - 1][j], map_data[i - 1][j + 1]));
+                    map_data[i][j] += energy_map.at<uchar>(i, j);
+                }
+            }
+
+            for(int i = 0; i < cols; ++i) {
+                // 寻找能量最低的起点
+                if(map_data[rows-1][i] < temp) {
+                    temp = map_data[rows-1][i];
+                }
+            }
+            return temp;
+        }
+
+        void OptimalOrder(int size)
+        {
+            int vCount = 0;
+            int hCount = 0;
+            for(int i = 0; i < size * 2; ++i) {
+                // Vertical
+                CalculateEnergyMap(output_img);
+                int e1 = FindEnergy(energy_map);
+                // Horizontal
+                output_img = RotateImage(output_img);
+                CalculateEnergyMap(output_img);
+                int e2 = FindEnergy(energy_map);
+                output_img = RotateBack(output_img);
+
+                if(e1 < e2 && vCount < size) {
+                    VerticalChangeAspectRatio(1);
+                    vCount++;
+                } else if(e2 <= e1 && hCount < size) {
+                    HorizontalChangeAspectRatio(1);
+                    hCount++;
+                } else {
+                    VerticalChangeAspectRatio(1);
+                    vCount++;
+                }
+            }
         }
 
 };

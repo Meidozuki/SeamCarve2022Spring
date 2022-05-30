@@ -49,6 +49,12 @@ int main()
 	int mod;
 	std::string src_dir(SRC_DIR);
 	std::cout << "Please input the mod: " << std::endl;
+	std::cout << "0. Aspect Ratio Change" << std::endl;
+	std::cout << "1. Image Enlarging" << std::endl;
+	std::cout << "2. Content Enhancement" << std::endl;
+	std::cout << "3. Object Removal" << std::endl;
+	std::cout << "4. Multi-size Images" << std::endl;
+	std::cout << "5. Retargeting with Optimal Seams-Order" << std::endl;
 	std::cin >> mod;
 
 	switch(mod) {
@@ -105,6 +111,14 @@ int main()
 			file_path = src_dir + file_path;
 			SeamCarver sc(file_path.c_str());
 			sc.UpdateImg(Mod::MULTI_SIZE_IMAGE, 100);
+			break;
+		}
+		case 5: {
+			std::cout << "Retargeting with Optimal Seams-Order: " << std::endl;
+			std::string file_path = "/test_image/HJoceanSmall.png";
+			file_path = src_dir + file_path;
+			SeamCarver sc(file_path.c_str());
+			sc.UpdateImg(Mod::OPTIMAL_ORDER, 100);
 			break;
 		}
 		default: {
